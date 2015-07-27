@@ -1,0 +1,5 @@
+puppet-module-theforeman-dns (3.0.0) unstable; urgency=low
+
+  * Initial release.
+
+ -- Arnd Hannemann <arnd.hannemann@credativ.de>  Mon, 27 Jul 2015 15:54:48 +0200
