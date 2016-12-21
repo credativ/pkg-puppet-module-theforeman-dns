@@ -1,7 +1,6 @@
 # Install dns service
 class dns::install {
-  package { 'dns':
-    ensure => present,
-    name   => $dns::dns_server_package,
+  if ! empty($dns::dns_server_package) {
+    ensure_packages([$dns::dns_server_package])
   }
 }

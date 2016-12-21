@@ -19,7 +19,7 @@ describe 'dns::zone' do
   end
 
   it "should have valid zone configuration" do
-    verify_concat_fragment_exact_contents(subject, 'dns_zones+10_example.com.dns', [
+    verify_concat_fragment_exact_contents(catalogue, 'dns_zones+10_example.com.dns', [
       'zone "example.com" {',
       '    type master;',
       '    file "/var/named/dynamic/db.example.com";',
@@ -41,7 +41,7 @@ describe 'dns::zone' do
   end
 
   it "should have valid zone file contents" do
-    verify_exact_contents(subject, '/var/named/dynamic/db.example.com', [
+    verify_exact_contents(catalogue, '/var/named/dynamic/db.example.com', [
       '$TTL 10800',
       '@ IN SOA puppetmaster.example.com. root.example.com. (',
       '	1	;Serial',
@@ -60,7 +60,7 @@ describe 'dns::zone' do
     let(:params) {{ :reverse => true }}
 
     it "should have valid zone file contents" do
-      verify_exact_contents(subject, '/var/named/dynamic/db.1.168.192.in-addr.arpa', [
+      verify_exact_contents(catalogue, '/var/named/dynamic/db.1.168.192.in-addr.arpa', [
         '$TTL 10800',
         '@ IN SOA puppetmaster.example.com. root.1.168.192.in-addr.arpa. (',
         '	1	;Serial',
@@ -78,7 +78,7 @@ describe 'dns::zone' do
     let(:params) {{ :allow_transfer => ['192.168.1.2'] }}
 
     it "should have valid zone configuration with allow-transfer" do
-      verify_concat_fragment_exact_contents(subject, 'dns_zones+10_example.com.dns', [
+      verify_concat_fragment_exact_contents(catalogue, 'dns_zones+10_example.com.dns', [
         'zone "example.com" {',
         '    type master;',
         '    file "/var/named/dynamic/db.example.com";',
@@ -94,7 +94,7 @@ describe 'dns::zone' do
       let(:params) {{ :allow_transfer => ['192.168.1.2', '192.168.1.3'] }}
 
       it "should have valid zone configuration with allow-transfer" do
-        verify_concat_fragment_exact_contents(subject, 'dns_zones+10_example.com.dns', [
+        verify_concat_fragment_exact_contents(catalogue, 'dns_zones+10_example.com.dns', [
           'zone "example.com" {',
           '    type master;',
           '    file "/var/named/dynamic/db.example.com";',
@@ -108,15 +108,50 @@ describe 'dns::zone' do
     end
   end
 
+  context 'when also_notify defined' do
+    let(:params) {{ :also_notify => ['192.168.1.2'] }}
+
+    it "should have valid zone configuration with also-notify" do
+      verify_concat_fragment_exact_contents(catalogue, 'dns_zones+10_example.com.dns', [
+        'zone "example.com" {',
+        '    type master;',
+        '    file "/var/named/dynamic/db.example.com";',
+        '    update-policy {',
+        '            grant rndc-key zonesub ANY;',
+        '    };',
+        '    also-notify { 192.168.1.2; };',
+        '};',
+      ])
+    end
+
+    context 'when also_notify with multiple values' do
+      let(:params) {{ :also_notify => ['192.168.1.2', '192.168.1.3'] }}
+
+      it "should have valid zone configuration with also-notify" do
+        verify_concat_fragment_exact_contents(catalogue, 'dns_zones+10_example.com.dns', [
+          'zone "example.com" {',
+          '    type master;',
+          '    file "/var/named/dynamic/db.example.com";',
+          '    update-policy {',
+          '            grant rndc-key zonesub ANY;',
+          '    };',
+          '    also-notify { 192.168.1.2; 192.168.1.3; };',
+          '};',
+        ])
+      end
+    end
+  end
+
   context 'when zonetype => slave' do
     let(:params) {{ :zonetype => 'slave', :masters  => ['192.168.1.1'] }}
 
     it "should have valid slave zone configuration" do
-      verify_concat_fragment_exact_contents(subject, 'dns_zones+10_example.com.dns', [
+      verify_concat_fragment_exact_contents(catalogue, 'dns_zones+10_example.com.dns', [
         'zone "example.com" {',
         '    type slave;',
         '    file "/var/named/dynamic/db.example.com";',
         '    masters { 192.168.1.1; };',
+        '    notify no;',
         '};',
       ])
     end
@@ -125,11 +160,29 @@ describe 'dns::zone' do
       let(:params) {{ :zonetype => 'slave', :masters  => ['192.168.1.1', '192.168.1.2'] }}
 
       it "should have valid slave zone configuration" do
-        verify_concat_fragment_exact_contents(subject, 'dns_zones+10_example.com.dns', [
+        verify_concat_fragment_exact_contents(catalogue, 'dns_zones+10_example.com.dns', [
           'zone "example.com" {',
           '    type slave;',
           '    file "/var/named/dynamic/db.example.com";',
           '    masters { 192.168.1.1; 192.168.1.2; };',
+          '    notify no;',
+          '};',
+        ])
+      end
+    end
+
+    context 'when dns_notify => no' do
+      let(:params) {{ :dns_notify => 'no' }}
+
+      it "should have valid slave zone configuration" do
+        verify_concat_fragment_exact_contents(catalogue, 'dns_zones+10_example.com.dns', [
+          'zone "example.com" {',
+          '    type master;',
+          '    file "/var/named/dynamic/db.example.com";',
+          '    update-policy {',
+          '            grant rndc-key zonesub ANY;',
+          '    };',
+          '    notify no;',
           '};',
         ])
       end
